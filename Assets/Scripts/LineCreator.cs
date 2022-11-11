@@ -24,14 +24,24 @@ public class LineCreator : MonoBehaviour
     
     //The LineSketchObject which will form the reference for all brushes
     private static LineSketchObject _brushReference;
-    
-    //Creates a CommandInvoker that is necessary to execute commands.
-    private static readonly CommandInvoker Invoker = new CommandInvoker();
 
+    //This invoker is for tracking an entire line, individual segments won't be tracked
+    //This is necessary so that undoing and redoing affects the entire line and not just its individual segments
+    private static readonly CommandInvoker EntireLineInvoker = new CommandInvoker();
+    
+    //This invoker is for tracking all segments of the latest drawn line
+    //Should be cleared before a new line gets created
+    private static CommandInvoker _currentLineInvoker = new CommandInvoker();
+    
     private void Awake()
     {
-        GetComponent<InputManager>().OnRightStartedPinching += HandleStartDrawingRequest;
-        GetComponent<InputManager>().OnRightHandPinched += HandleDrawRequest;
+        GetComponent<PoseInputManager>().OnRightStartedPinching += HandleStartDrawingRequest;
+        GetComponent<PoseInputManager>().OnRightHandPinched += HandleDrawRequest;
+        
+        GetComponent<PoseInputManager>().OnRightStoppedPinching += HandleStopDrawingRequest;
+
+        GetComponent<MenuInputManager>().OnUndoEvent += HandleUndoRequest;
+        GetComponent<MenuInputManager>().OnRedoEvent += HandleRedoRequest;
     }
     
     private void Start()
@@ -47,8 +57,6 @@ public class LineCreator : MonoBehaviour
 
         //setting a default scale of one, size changes can be done later by changing the diameter
         _customBrush = CreateLineBrush(8, 1, 2);
-
-        InstantiateLine();
     }
     
     
@@ -78,37 +86,51 @@ public class LineCreator : MonoBehaviour
     {
         lineSketchObject.GetComponent<Renderer>().material = material;
     }
-    
-    private void Update()
-    {
-        
-    }
 
     private void HandleStartDrawingRequest()
     {
         InstantiateLine();
     }
 
+    private void HandleStopDrawingRequest()
+    {
+        //this method can be used for cleanup in the future, such as mesh optimization of the drawn line
+        //it can be also used to signal that line creation has stopped
+    }
+    
     private void HandleDrawRequest(Vector3 position)
     {
         DrawLinePointAt(position);
     }
 
-    private void InstantiateLine()
+    private void HandleUndoRequest()
     {
-        _currentLineSketchObject = Instantiate(defaults.LineSketchObjectPrefab).GetComponent<LineSketchObject>();
+        EntireLineInvoker.Undo();
+    }
 
-        _currentLineSketchObject.SetBrush(_customBrush);
-        
-        _currentLineSketchObject.SetLineDiameter(brushScale);
-        
-        ChangeLineMaterialTo(customMaterial, _currentLineSketchObject);
-
-        Invoker.ExecuteCommand(new AddObjectToSketchWorldRootCommand(_currentLineSketchObject, _sketchWorld));
+    private void HandleRedoRequest()
+    {
+        EntireLineInvoker.Redo();
     }
     
+    private void InstantiateLine()
+    {
+        //refreshing the invoker for the next line
+        _currentLineInvoker = new CommandInvoker();
+        
+        _currentLineSketchObject = Instantiate(defaults.LineSketchObjectPrefab).GetComponent<LineSketchObject>();
+
+        //changing the appearance of the line
+        _currentLineSketchObject.SetBrush(_customBrush);
+        _currentLineSketchObject.SetLineDiameter(brushScale);
+        ChangeLineMaterialTo(customMaterial, _currentLineSketchObject);
+
+        EntireLineInvoker.ExecuteCommand(new AddObjectToSketchWorldRootCommand(_currentLineSketchObject, _sketchWorld));
+    }
+
     private void DrawLinePointAt(Vector3 position)
     {
-        Invoker.ExecuteCommand(new AddControlPointContinuousCommand(_currentLineSketchObject, position));
+        _currentLineInvoker.ExecuteCommand(new AddControlPointContinuousCommand(_currentLineSketchObject, position));
     }
+    
 }

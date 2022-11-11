@@ -6,7 +6,7 @@ using Microsoft.MixedReality.Toolkit.Subsystems;
 using UnityEngine;
 using UnityEngine.XR;
 
-public class InputManager : MonoBehaviour
+public class PoseInputManager : MonoBehaviour
 {
     private bool _jointIsValid;
 
@@ -14,6 +14,7 @@ public class InputManager : MonoBehaviour
 
     public event Action<Vector3> OnRightHandPinched = delegate {  };
     public event Action OnRightStartedPinching = delegate {  };
+    public event Action OnRightStoppedPinching = delegate {  };
 
     private bool _wasRightHandPinchedLastFrame;
 
@@ -34,6 +35,13 @@ public class InputManager : MonoBehaviour
             }
             
             OnRightHandPinched(jointPose.Position);
+        }
+        else
+        {
+            if (_wasRightHandPinchedLastFrame)
+            {
+                OnRightStoppedPinching();
+            }
         }
         PrepareNextFrame();
     }
