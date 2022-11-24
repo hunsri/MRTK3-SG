@@ -57,6 +57,11 @@ namespace MRTK3SketchingGeometry
             commandInvoker.ExecuteCommand(new AddObjectToSketchWorldRootCommand(CurrentLineSketchObject, sketchWorld));
         }
 
+        public virtual void FinalizeLine()
+        {
+            
+        }
+
         
         /// <summary>
         /// Creates a LineBrush that can be used to modify the appearance of drawn lines

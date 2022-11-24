@@ -14,7 +14,7 @@ namespace MRTK3SketchingGeometry
         private LineBrush _customBrush;
 
         [SerializeField] private Material customMaterial;
-        
+
         public override void Initialize(DefaultReferences defaults)
         {
             base.Initialize(defaults);
@@ -26,7 +26,7 @@ namespace MRTK3SketchingGeometry
         public override void InstantiateLine(CommandInvoker commandInvoker, SketchWorld sketchWorld)
         {
             base.InstantiateLine(commandInvoker, sketchWorld);
-            
+
             //changing the appearance of the line
             CurrentLineSketchObject.SetBrush(_customBrush);
             CurrentLineSketchObject.SetLineDiameter(brushScale);
